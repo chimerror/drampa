@@ -26,7 +26,10 @@
           (= y-rank 0) (if (<= x-rank 5) -1 1)
           :else (compare x-rank y-rank))))
 
-(def notation-group-regex #"([0-9]+)([psm])|([1-7]+)(z)")
+(defn sort-tiles [tiles]
+  (sort compare-tiles tiles))
+
+(def notation-group-regex #"([0-9]+)([mps])|([1-7]+)(z)")
 
 (defn- tiles-from-notation-group [notation-group]
   (let [filtered-notation-group (vec (remove nil? notation-group))
