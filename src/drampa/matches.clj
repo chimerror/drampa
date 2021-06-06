@@ -1,7 +1,7 @@
 (ns drampa.matches
   (:require [drampa.tiles :as d.tiles]))
 
-(defrecord Match [wall dead-wall scores player-winds prevailing-wind])
+(defrecord Match [wall dead-wall scores player-winds prevailing-wind dora ura-dora])
 
 (def starting-score 30000)
 
@@ -27,11 +27,19 @@
             wrapped-end-index (- dead-wall-end-index 136)
             second-dead-wall (subvec wall 0 (inc wrapped-end-index))
             live-wall (subvec wall (inc wrapped-end-index) (inc live-wall-last-index))]
-        (vector live-wall (concat first-dead-wall second-dead-wall)))
+        (vector live-wall (vec (concat first-dead-wall second-dead-wall))))
       (let [dead-wall (subvec wall dead-wall-start-index (inc dead-wall-end-index))
             front-live-wall (subvec wall live-wall-first-index)
             back-live-wall (subvec wall 0 (inc live-wall-last-index))]
-        (vector (concat front-live-wall back-live-wall) dead-wall)))))
+        (vector (vec (concat front-live-wall back-live-wall)) dead-wall)))))
+
+(defn reveal-dora [{:keys [dead-wall dora ura-dora] :as match}]
+  (let [next-dora-index (+ 4 (* 2 (count dora)))
+        next-dora (get dead-wall next-dora-index)
+        next-ura-dora (get dead-wall (inc next-dora-index))]
+      (-> match
+          (assoc :dora (conj dora next-dora))
+          (assoc :ura-dora (conj ura-dora next-ura-dora)))))
 
 (defn get-initial-match []
   (let [wall (vec (shuffle d.tiles/initial-wall))
@@ -39,4 +47,5 @@
         [live-wall dead-wall] (break-wall-at wall dice-roll)
         scores (vec (repeat 4 starting-score))
         player-winds (fill-starting-winds (rand-int 4))]
-  (->Match live-wall dead-wall scores player-winds :east)))
+  (-> (->Match live-wall dead-wall scores player-winds :east [] [])
+      (reveal-dora))))
