@@ -111,3 +111,25 @@
           (testing (str "Are they correctly revealed after " reveal-count " time(s)?")
             (is (= expected-dora actual-dora))
             (is (= expected-ura-dora actual-ura-dora)))))))
+
+(deftest get-dora-from-indicator-is-correct
+  (testing "Can the dora be retrieved from the indicator?"
+    (testing "If the tile is a red five?"
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :pin 0)) (d.tiles/->Tile :pin 6)))
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :sou 0)) (d.tiles/->Tile :sou 6)))
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :man 0)) (d.tiles/->Tile :man 6))))
+    (testing "If the tile is a nine?"
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :pin 9)) (d.tiles/->Tile :pin 1)))
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :sou 9)) (d.tiles/->Tile :sou 1)))
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :man 9)) (d.tiles/->Tile :man 1))))
+    (testing "If the tile is a different number tile?"
+      (doseq [suit [:pin :sou :man] rank [1 2 3 4 5 6 7 8]]
+        (is (= (get-dora-from-indicator (d.tiles/->Tile suit rank)) (d.tiles/->Tile suit (inc rank))))))
+    (testing "If the tile is a North Wind?"
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :zi 4)) (d.tiles/->Tile :zi 1))))
+    (testing "If the tile is a Red Dragon?"
+      (is (= (get-dora-from-indicator (d.tiles/->Tile :zi 7)) (d.tiles/->Tile :zi 5))))
+    (testing "If the tile is a different honor?"
+      (doseq [rank [1 2 3 5 6]]
+        (is (= (get-dora-from-indicator (d.tiles/->Tile :zi rank)) (d.tiles/->Tile :zi (inc rank))))))))
+

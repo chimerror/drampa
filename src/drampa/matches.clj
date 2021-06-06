@@ -41,6 +41,16 @@
           (assoc :dora (conj dora next-dora))
           (assoc :ura-dora (conj ura-dora next-ura-dora)))))
 
+(defn get-dora-from-indicator [{indicator-suit :suit indicator-rank :rank}]
+  (let [dora-rank
+        (cond
+          (= indicator-rank 0) 6
+          (= indicator-rank 9) 1
+          (and (= indicator-suit :zi) (= indicator-rank 4)) 1
+          (and (= indicator-suit :zi) (= indicator-rank 7)) 5
+          :else (inc indicator-rank))]
+    (d.tiles/->Tile indicator-suit dora-rank)))
+
 (defn get-initial-match []
   (let [wall (vec (shuffle d.tiles/initial-wall))
         dice-roll (+ (inc (rand-int 6)) (inc (rand-int 6)))
