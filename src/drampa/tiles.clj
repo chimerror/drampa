@@ -39,7 +39,7 @@
     (map #(->Tile suit (Integer/parseInt (str %))) tile-numbers)))
 
 (defn tiles-from-notation [notation]
-  (apply concat (map tiles-from-notation-group (re-seq notation-group-regex notation))))
+  (vec (apply concat (map tiles-from-notation-group (re-seq notation-group-regex notation)))))
 
 (defn notation-from-tiles [tiles]
   (loop  [current-tile (first tiles)
@@ -56,4 +56,3 @@
                   full-tile-string
                   (first full-tile-string))]
           (recur (first tiles-left) (next tiles-left) (conj result title-string))))))
-

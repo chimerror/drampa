@@ -1,13 +1,14 @@
 (ns drampa.matches
-  (:require [drampa.tiles :as d.tiles]))
+  (:require [drampa.tiles :as d.tiles]
+            [drampa.players :as d.players]))
 
-(defrecord Match [wall dead-wall scores player-winds prevailing-wind dora ura-dora])
+(defrecord Match [wall dead-wall players prevailing-wind dora ura-dora])
 
 (def starting-score 30000)
 
 (def wind-order [:east :south :west :north])
 
-(defn fill-starting-winds [starting-index]
+(defn fill-players [starting-index]
   (loop  [current-index starting-index
           winds wind-order
           result (vec (repeat 4 nil))]
@@ -15,7 +16,7 @@
       result
       (let [next-index (if (= current-index 3) 0 (inc current-index))
             wind (first winds)]
-        (recur next-index (next winds) (assoc result current-index wind))))))
+        (recur next-index (next winds) (assoc result current-index (d.players/->Player starting-score [] wind)))))))
 
 (defn break-wall-at [wall dice-roll]
   (let [dead-wall-start-index (- (get [134 32 64 100] (mod dice-roll 4)) (* 2 (dec dice-roll)))
@@ -51,11 +52,34 @@
           :else (inc indicator-rank))]
     (d.tiles/->Tile indicator-suit dora-rank)))
 
+(def deal-order
+  (concat
+    (apply concat (repeat 3 (vec (for [wind wind-order] [wind 4]))))
+    (vec (for [wind wind-order] [wind 1]))
+    [[:east 1]]))
+
+(defn deal-to-hand [[wall hand] _]
+  [(pop wall) (conj hand (peek wall))])
+
+(defn- deal-reducer [match wind hand]
+  (let [player-winds (mapv :wind (:players match))
+        player-index (.indexOf player-winds wind)]
+    (assoc-in match [:players player-index :hand] hand)))
+
+(defn deal-initial-hands [{:keys [wall players] :as match}]
+  (loop  [current-wall wall
+          [[wind-to-deal-to tile-count :as current-deal] & rest-of-deals] deal-order
+          hands {:east [] :south [] :west [] :north []}]
+    (if (nil? current-deal)
+        (reduce-kv deal-reducer (assoc match :wall current-wall) hands)
+        (let [[new-wall new-hand] (reduce deal-to-hand [current-wall (hands wind-to-deal-to)] (range tile-count))]
+          (recur new-wall rest-of-deals (assoc hands wind-to-deal-to new-hand))))))
+
 (defn get-initial-match []
   (let [wall (vec (shuffle d.tiles/initial-wall))
         dice-roll (+ (inc (rand-int 6)) (inc (rand-int 6)))
         [live-wall dead-wall] (break-wall-at wall dice-roll)
-        scores (vec (repeat 4 starting-score))
-        player-winds (fill-starting-winds (rand-int 4))]
-  (-> (->Match live-wall dead-wall scores player-winds :east [] [])
+        players (fill-players (rand-int 4))]
+  (-> (->Match live-wall dead-wall players :east [] [])
+      (deal-initial-hands)
       (reveal-dora))))

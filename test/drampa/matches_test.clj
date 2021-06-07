@@ -1,31 +1,45 @@
 (ns drampa.matches-test
   (:require [clojure.test :refer :all]
             [drampa.matches :refer :all]
-            [drampa.tiles :as d.tiles]))
+            [drampa.tiles :as d.tiles]
+            [drampa.players :as d.players]))
 
 (deftest get-initial-match-is-correct
-  (let [{:keys [wall dead-wall scores player-winds prevailing-wind dora ura-dora]} (get-initial-match)]
+  (let [{:keys [wall dead-wall players prevailing-wind dora ura-dora]} (get-initial-match)]
     (testing "Is the starting wall of a match initialized correctly?"
       (is (not (nil? wall)))
       (is (= (count wall)) 136))
-    (testing "Are the starting scores of a match initialized correctly?"
-      (is (not (nil? scores)))
-      (is (= (count scores) 4))
-      (is (every? #(= starting-score %) scores)))
-    (testing "Are the seat winds of a match initialized correctly?"
-      (is (= (count player-winds) 4))
-      (is (distinct? player-winds))
-      (is (some #{:east} player-winds))
-      (is (some #{:south} player-winds))
-      (is (some #{:west} player-winds))
-      (is (some #{:north} player-winds)))
+    (testing "Are the players of a match initialized correctly?"
+      (is (not (nil? players)))
+      (is (= (count players) 4))
+      (testing "Are the seat winds of a match initialized correctly?"
+        (let [player-winds (map :wind players)]
+          (is (not (nil? player-winds)))
+          (is (= (count player-winds) 4))
+          (is (distinct? player-winds))
+          (is (some #{:east} player-winds))
+          (is (some #{:south} player-winds))
+          (is (some #{:west} player-winds))
+          (is (some #{:north} player-winds))))
+      (testing "Are the starting scores of a match initialized correctly?"
+        (let [player-scores (map :score players)]
+          (is (not (nil? player-scores)))
+          (is (= (count player-scores) 4))
+          (is (every? #(= starting-score %) player-scores))))
+      (testing "Have the hands been dealt correctly?"
+        (doseq [{:keys [wind hand]} players]
+          (is (= (count hand) (if (= :east wind) 14 13))))))
     (testing "Is the prevailing wind of a match initialized correctly?"
       (is (= prevailing-wind :east)))
     (testing "Is the wall broken correctly?"
+      (is (not (nil? dead-wall)))
       (is (= (count dead-wall) 14))
-      (is (= (count wall) 122)))
+      (is (not (nil? wall)))
+      (is (= (count wall) 69)))
     (testing "Has one dora been revealed?"
+      (is (not (nil? dora)))
       (is (= (count dora) 1))
+      (is (not (nil? dora)))
       (is (= (count ura-dora) 1)))))
 
 (def break-wall-at-test-cases (sorted-map
@@ -77,7 +91,7 @@
 (deftest break-wall-at-is-correct
   (let [break-test-wall (vec (d.tiles/sort-tiles d.tiles/initial-wall))
         test-cases
-          (reduce-kv #(assoc %1 %2 (vec (map d.tiles/tiles-from-notation %3))) (sorted-map) break-wall-at-test-cases)]
+          (reduce-kv #(assoc %1 %2 (map d.tiles/tiles-from-notation %3)) (sorted-map) break-wall-at-test-cases)]
     (testing "Is the wall broken correctly given a certain dice roll?"
       (doseq [[dice-roll expected-value] test-cases]
         (is (= (break-wall-at break-test-wall dice-roll) expected-value))))))
@@ -101,10 +115,10 @@
     (range times)))
 
 (deftest reveal-dora-is-correct
-  (let [test-dead-wall (vec (d.tiles/tiles-from-notation "17263544536271z"))
+  (let [test-dead-wall (d.tiles/tiles-from-notation "17263544536271z")
         test-cases (reduce-kv reveal-dora-test-case-reducer {0 {:dora [] :ura-dora []}} reveal-dora-test-cases)
         test-cases (dissoc test-cases 0)
-        match (->Match nil test-dead-wall nil nil nil [] [])]
+        match (->Match nil test-dead-wall nil nil [] [])]
     (testing "Are dora tiles revealed correctly multiple times?"
       (doseq [[reveal-count {expected-dora :dora expected-ura-dora :ura-dora}] test-cases
               :let [{actual-dora :dora actual-ura-dora :ura-dora} (reveal-dora-multiple-times match reveal-count)]]
@@ -133,3 +147,25 @@
       (doseq [rank [1 2 3 5 6]]
         (is (= (get-dora-from-indicator (d.tiles/->Tile :zi rank)) (d.tiles/->Tile :zi (inc rank))))))))
 
+(def deal-initial-hands-test-wall
+  (d.tiles/tiles-from-notation "9p9s9m7z5p4z4m4s4p3333z3333m3333s3333p2222z2222m2222s2222p1111z1111m1111s1111p"))
+
+(def deal-initial-hands-expected-hands
+  {:east "11112222333345p" :south "1111222233334s" :west "1111222233334m" :north "1111222233334z"})
+
+(defn load-deal-initial-hands-expected-hands []
+  (reduce-kv #(assoc %1 %2 (d.tiles/tiles-from-notation %3)) {} deal-initial-hands-expected-hands))
+
+(deftest deal-initial-hands-is-correct
+  (testing "Are hands dealt correctly from the wall?"
+    (let [test-wall deal-initial-hands-test-wall
+          match (->Match test-wall nil (fill-players 0) nil nil nil)
+          {:keys [wall players]} (deal-initial-hands match)
+          expected-hands (load-deal-initial-hands-expected-hands)]
+      (testing "Is the remaining wall correct?"
+        (is (= wall (d.tiles/tiles-from-notation "9p9s9m7z"))))
+      (testing "Are the hands correct?"
+        (doseq [{:keys [wind hand]} players
+                :let [expected-hand (expected-hands wind)]]
+          (testing (str "Is the " wind " hand correct?")
+            (is (= expected-hand (d.tiles/sort-tiles hand)))))))))
