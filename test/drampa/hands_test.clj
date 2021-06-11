@@ -26,7 +26,7 @@
   (testing "Are ordered pairs not considered chii?"
     (is (= false (is-chii? (d.tiles/tiles-from-notation "56s"))))))
 
-(deftest is-kan-is-correct
+(deftest is-pon-is-correct
   (testing "Are all valid number tile pung considered pon?"
       (doseq [suit [:pin :man :sou]
               rank (range 1 10)
@@ -44,8 +44,32 @@
   (testing "Are sequences not considered pon?"
     (is (= false (is-pon? (d.tiles/tiles-from-notation "123z")))))
   (testing "Are different suits not considered pon?"
-    (is (= false (is-chii? (d.tiles/tiles-from-notation "5p5s5m")))))
+    (is (= false (is-pon? (d.tiles/tiles-from-notation "5p5s5m")))))
   (testing "Are quads not considered pon?"
-    (is (= false (is-chii? (d.tiles/tiles-from-notation "5550m")))))
+    (is (= false (is-pon? (d.tiles/tiles-from-notation "5550m")))))
   (testing "Are pairs not considered pon?"
-    (is (= false (is-chii? (d.tiles/tiles-from-notation "66z"))))))
+    (is (= false (is-pon? (d.tiles/tiles-from-notation "66z"))))))
+
+(deftest is-kan-is-correct
+  (testing "Are all valid number tile kong considered kan?"
+      (doseq [suit [:pin :man :sou]
+              rank (range 1 10)
+              :let [tiles (mapv #(d.tiles/->Tile suit %) (repeat 4 rank))]]
+        (is (= true (is-kan? tiles)))))
+  (testing "Are all valid pung with red fives considered kan?"
+      (doseq [suit [:pin :man :sou]
+              ranks [[5 5 5 0] [5 5 0 5] [5 0 5 5] [0 5 5 5]]
+              :let [tiles (mapv #(d.tiles/->Tile suit %) ranks)]]
+        (is (= true (is-kan? tiles)))))
+  (testing "Are all valid honor tile pung considered kan?"
+      (doseq [rank (range 1 8)
+              :let [tiles (mapv #(d.tiles/->Tile :zi %) (repeat 4 rank))]]
+        (is (= true (is-kan? tiles)))))
+  (testing "Are sequences not considered kan?"
+    (is (= false (is-kan? (d.tiles/tiles-from-notation "1234z")))))
+  (testing "Are different suits not considered kan?"
+    (is (= false (is-kan? (d.tiles/tiles-from-notation "5p5s5m5z")))))
+  (testing "Are triplets not considered kan?"
+    (is (= false (is-kan? (d.tiles/tiles-from-notation "550m")))))
+  (testing "Are pairs not considered kan?"
+    (is (= false (is-kan? (d.tiles/tiles-from-notation "66z"))))))

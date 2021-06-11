@@ -29,3 +29,16 @@
       (and
         (= x-suit y-suit z-suit)
         (= x-rank y-rank z-rank)))))
+
+(defn is-kan? [hand]
+  (if (not= 4 (count hand))
+    false
+    (let [hand (d.tiles/sort-tiles (replace-red-dora hand))
+          [p q r s :as hand] hand
+          {p-suit :suit p-rank :rank :as p} p
+          {q-suit :suit q-rank :rank :as q} q
+          {r-suit :suit r-rank :rank :as r} r
+          {s-suit :suit s-rank :rank :as s} s]
+      (and
+        (= p-suit q-suit r-suit s-suit)
+        (= p-rank q-rank r-rank s-rank)))))
