@@ -2,7 +2,7 @@
   (:require [drampa.tiles :as d.tiles]
             [drampa.players :as d.players]))
 
-(defrecord Match [wall dead-wall players prevailing-wind dora ura-dora])
+(defrecord Match [wall dead-wall players active-player-wind prevailing-wind dora ura-dora])
 
 (def starting-score 30000)
 
@@ -16,7 +16,10 @@
       result
       (let [next-index (if (= current-index 3) 0 (inc current-index))
             wind (first winds)]
-        (recur next-index (next winds) (assoc result current-index (d.players/->Player starting-score [] wind)))))))
+        (recur
+          next-index
+          (next winds)
+          (assoc result current-index (d.players/->Player starting-score wind [] [] [] :random :random)))))))
 
 (defn break-wall-at [wall dice-roll]
   (let [dead-wall-start-index (- (get [134 32 64 100] (mod dice-roll 4)) (* 2 (dec dice-roll)))
@@ -80,6 +83,17 @@
         dice-roll (+ (inc (rand-int 6)) (inc (rand-int 6)))
         [live-wall dead-wall] (break-wall-at wall dice-roll)
         players (fill-players (rand-int 4))]
-  (-> (->Match live-wall dead-wall players :east [] [])
+  (-> (->Match live-wall dead-wall players :east :east [] [])
       (deal-initial-hands)
       (reveal-dora))))
+
+;; (defn perform-draw [{:keys [wall players active-player-wind] :as match}]
+;;   (let [{active-hand :hand :as active-player} (d.players/get-player-by-wind players active-player-wind)
+;;         first-draw? (and (= :east active-player-wind) (= 14 (count active-hand)))
+;;         [new-wall active-hand] (if first-draw? [wall active-hand] (deal-to-hand [wall active-hand] nil))
+;;         new-match
+;;           (-> match
+;;               (assoc :wall new-wall)
+;;               (update-in [:players] #(if (= active-player-wind (:wind %)) (assoc % :hand active-hand) %)))
+;;         discarded-tile (d.players/make-discard new-match)]))
+

@@ -118,7 +118,7 @@
   (let [test-dead-wall (d.tiles/tiles-from-notation "17263544536271z")
         test-cases (reduce-kv reveal-dora-test-case-reducer {0 {:dora [] :ura-dora []}} reveal-dora-test-cases)
         test-cases (dissoc test-cases 0)
-        match (->Match nil test-dead-wall nil nil [] [])]
+        match (->Match nil test-dead-wall nil nil nil [] [])]
     (testing "Are dora tiles revealed correctly multiple times?"
       (doseq [[reveal-count {expected-dora :dora expected-ura-dora :ura-dora}] test-cases
               :let [{actual-dora :dora actual-ura-dora :ura-dora} (reveal-dora-multiple-times match reveal-count)]]
@@ -159,7 +159,7 @@
 (deftest deal-initial-hands-is-correct
   (testing "Are hands dealt correctly from the wall?"
     (let [test-wall deal-initial-hands-test-wall
-          match (->Match test-wall nil (fill-players 0) nil nil nil)
+          match (->Match test-wall nil (fill-players 0) nil nil nil nil)
           {:keys [wall players]} (deal-initial-hands match)
           expected-hands (load-deal-initial-hands-expected-hands)]
       (testing "Is the remaining wall correct?"
