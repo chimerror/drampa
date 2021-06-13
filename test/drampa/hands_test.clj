@@ -91,6 +91,19 @@
         (doseq [expected-meld expected-melds]
           (is (some #(= expected-meld %) actual-melds)))))))
 
+(def get-chow-melds-test-cases
+  [
+    [(d.tiles/->Tile :zi 5) "2p3s11m34z" nil]
+    [(d.tiles/->Tile :pin 7) "46p3s11m34z" nil]
+    [(d.tiles/->Tile :man 3) "1245m" [["123m" "45m"] ["234m" "15m"] ["345m" "12m"]]]
+    [(d.tiles/->Tile :sou 4) "34067s" [["340s" "467s"] ["406s" "347s"]]]
+    [(d.tiles/->Tile :pin 0) "34567p" [["340p" "567p"] ["406p" "357p"] ["067p" "345p"]]]
+    [(d.tiles/->Tile :sou 2) "13567s" [["123s" "567s"]]]
+    [(d.tiles/->Tile :man 2) "134567m" [["123m" "4567m"] ["234m" "1567m"]]]])
+
+(deftest get-chow-melds-is-correct
+  (verify-get-melds get-chow-melds-test-cases get-chow-melds "chow"))
+
 (def get-pung-melds-test-cases
   [
     [(d.tiles/->Tile :zi 5) "2p3s11m5z" nil]
@@ -105,15 +118,17 @@
 (deftest get-pung-melds-is-correct
   (verify-get-melds get-pung-melds-test-cases get-pung-melds "pung"))
 
-(def get-chow-melds-test-cases
+(def get-kong-melds-test-cases
   [
-    [(d.tiles/->Tile :zi 5) "2p3s11m34z" nil]
-    [(d.tiles/->Tile :pin 7) "46p3s11m34z" nil]
-    [(d.tiles/->Tile :man 3) "1245m" [["123m" "45m"] ["234m" "15m"] ["345m" "12m"]]]
-    [(d.tiles/->Tile :sou 4) "34067s" [["340s" "467s"] ["406s" "347s"]]]
-    [(d.tiles/->Tile :pin 0) "34567p" [["340p" "567p"] ["406p" "357p"] ["067p" "345p"]]]
-    [(d.tiles/->Tile :sou 2) "13567s" [["123s" "567s"]]]
-    [(d.tiles/->Tile :man 2) "134567m" [["123m" "4567m"] ["234m" "1567m"]]]])
+    [(d.tiles/->Tile :zi 5) "2p3s11m55z" nil]
+    [(d.tiles/->Tile :zi 5) "2p3s11m5z" nil]
+    [(d.tiles/->Tile :zi 5) "2p3s11m" nil]
+    [(d.tiles/->Tile :pin 7) "777p3s11m66z" [["7777p" "3s11m66z"]]]
+    [(d.tiles/->Tile :sou 4) "067p12344456s11m66z" [["4444s" "067p12356s11m66z"]]]
+    [(d.tiles/->Tile :man 1) "2p3s111m66z" [["1111m" "2p3s66z"]]]
+    [(d.tiles/->Tile :zi 5) "2p3s11m555z" [["5555z" "2p3s11m"]]]
+    [(d.tiles/->Tile :man 0) "2p3s555m77z" [["0555m" "2p3s77z"]]]
+    [(d.tiles/->Tile :man 5) "2p3s550m77z" [["5550m" "2p3s77z"]]]])
 
-(deftest get-chow-melds-is-correct
-  (verify-get-melds get-chow-melds-test-cases get-chow-melds "chow"))
+(deftest get-kong-melds-is-correct
+  (verify-get-melds get-kong-melds-test-cases get-kong-melds "kong"))

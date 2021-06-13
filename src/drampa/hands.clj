@@ -118,3 +118,15 @@
                   pung-b [tile (d.tiles/->Tile suit 0) (d.tiles/->Tile suit 5)]
                   rest-b (concat (conj (vec before) (d.tiles/->Tile suit 5)) after)]
                 [[pung-a rest-a] [pung-b rest-b]])))))))
+
+(defn get-kong-melds
+  ([hand] (get-kong-melds (first hand) (next hand)))
+  ([{:keys [suit rank] :as tile} hand]
+    (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
+      nil
+      (let [[before kong-matches after] (partition-into-three #(d.tiles/=ignoring-dora tile %) hand)]
+        (if (< (count kong-matches) 3)
+          nil
+          (let [kong (conj kong-matches tile)
+                rest (concat before after)]
+            [[kong rest]]))))))
