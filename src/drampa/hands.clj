@@ -81,24 +81,25 @@
                                 (>= non-dora-rank 8) 7
                                 :else (- non-dora-rank 2))
             last-starting-rank (+ first-starting-rank 2)
-            last-starting-rank (if (> last-starting-rank 7) 7 last-starting-rank)
-            result []]
-        (keep identity
-          (for [lowest-rank (range first-starting-rank (inc last-starting-rank))
-                :let [
-                  [before chow-matches after] (partition-into-three #(tile-is-in-chow-range? % suit lowest-rank) hand)
-                  lowest-tile (get-chow-match-tile-by-rank lowest-rank tile chow-matches)
-                  middle-rank (inc lowest-rank)
-                  middle-tile (get-chow-match-tile-by-rank middle-rank tile chow-matches)
-                  last-rank (+ 2 lowest-rank)
-                  last-tile (get-chow-match-tile-by-rank last-rank tile chow-matches)]]
-            (if (or (nil? lowest-tile) (nil? middle-tile) (nil? last-tile))
-              nil
-              (let [new-chow-matches (->> chow-matches
-                                          (remove-chow-match-tile-by-rank lowest-rank tile)
-                                          (remove-chow-match-tile-by-rank middle-rank tile)
-                                          (remove-chow-match-tile-by-rank last-rank tile))]
-              [[lowest-tile middle-tile last-tile] (concat before new-chow-matches after)]))))))))
+            last-starting-rank (if (> last-starting-rank 7) 7 last-starting-rank)]
+        (-> (keep identity
+              (for [lowest-rank (range first-starting-rank (inc last-starting-rank))
+                    :let [
+                      [before chow-matches after]
+                        (partition-into-three #(tile-is-in-chow-range? % suit lowest-rank) hand)
+                      lowest-tile (get-chow-match-tile-by-rank lowest-rank tile chow-matches)
+                      middle-rank (inc lowest-rank)
+                      middle-tile (get-chow-match-tile-by-rank middle-rank tile chow-matches)
+                      last-rank (+ 2 lowest-rank)
+                      last-tile (get-chow-match-tile-by-rank last-rank tile chow-matches)]]
+                (if (or (nil? lowest-tile) (nil? middle-tile) (nil? last-tile))
+                  nil
+                  (let [new-chow-matches (->> chow-matches
+                                              (remove-chow-match-tile-by-rank lowest-rank tile)
+                                              (remove-chow-match-tile-by-rank middle-rank tile)
+                                              (remove-chow-match-tile-by-rank last-rank tile))]
+                  [[lowest-tile middle-tile last-tile] (concat before new-chow-matches after)]))))
+              (as-> cm (if (empty? cm) nil cm)))))))
 
 (defn get-pung-melds
   ([hand] (get-pung-melds (first hand) (next hand)))

@@ -74,51 +74,46 @@
   (testing "Are pairs not considered kan?"
     (is (= false (is-kan? (d.tiles/tiles-from-notation "66z"))))))
 
-(def get-pung-melds-single-choice-test-cases
-  [
-    [(d.tiles/->Tile :pin 7) "777p3s11m66z" "777p" "7p3s11m66z"]
-    [(d.tiles/->Tile :sou 4) "067p1234456s11m66z" "444s" "067p12356s11m66z"]
-    [(d.tiles/->Tile :man 1) "2p3s11m66z" "111m" "2p3s66z"]
-    [(d.tiles/->Tile :zi 5) "2p3s11m55z" "555z" "2p3s11m"]
-    [(d.tiles/->Tile :man 0) "2p3s55m77z" "055m" "2p3s77z"]])
+(defn verify-get-melds [test-cases f meld-name]
+  (doseq [test-case test-cases
+          :let [
+            [tile hand-notation expected-melds] test-case
+            hand (d.tiles/tiles-from-notation hand-notation)
+            expected-melds (when expected-melds (mapv #(mapv d.tiles/tiles-from-notation %) expected-melds))
+            actual-melds (f tile hand)]]
+    (if (nil? expected-melds)
+      (testing (str "Are invalid " meld-name " melds NOT claimed?")
+        (is (nil? actual-melds)))
+      (testing (str "Are valid " meld-name " melds claimed?")
+        (is (not (nil? actual-melds)))
+        (is (= (count actual-melds) (count actual-melds)))
+        (is (not-any? nil? actual-melds))
+        (doseq [expected-meld expected-melds]
+          (is (some #(= expected-meld %) actual-melds)))))))
 
-(def get-pung-melds-double-choice-test-case
-  [(d.tiles/->Tile :sou 5) "067p12344550s11m66z" [["555s" "067p123440s11m66z"] ["505s" "067p123445s11m66z"]]])
+(def get-pung-melds-test-cases
+  [
+    [(d.tiles/->Tile :zi 5) "2p3s11m5z" nil]
+    [(d.tiles/->Tile :zi 5) "2p3s11m" nil]
+    [(d.tiles/->Tile :pin 7) "777p3s11m66z" [["777p" "7p3s11m66z"]]]
+    [(d.tiles/->Tile :sou 4) "067p1234456s11m66z" [["444s" "067p12356s11m66z"]]]
+    [(d.tiles/->Tile :man 1) "2p3s11m66z" [["111m" "2p3s66z"]]]
+    [(d.tiles/->Tile :zi 5) "2p3s11m55z" [["555z" "2p3s11m"]]]
+    [(d.tiles/->Tile :man 0) "2p3s55m77z" [["055m" "2p3s77z"]]]
+    [(d.tiles/->Tile :sou 5) "067p12344550s11m66z" [["555s" "067p123440s11m66z"] ["505s" "067p123445s11m66z"]]]])
 
 (deftest get-pung-melds-is-correct
-  (testing "Are valid single-choice pungs claimed?"
-    (doseq [test-case get-pung-melds-single-choice-test-cases
-            :let [
-              [tile hand-notation pung-notation rest-notation] test-case
-              hand (d.tiles/tiles-from-notation hand-notation)
-              expected-pung (d.tiles/tiles-from-notation pung-notation)
-              expected-rest (d.tiles/tiles-from-notation rest-notation)
-              pung-melds (get-pung-melds tile hand)
-              pung-meld (first pung-melds)
-              [actual-pung actual-rest] pung-meld]]
-      (is (not (nil? pung-melds)))
-      (is (= 1 (count pung-melds)))
-      (is (not (nil? pung-meld)))
-      (is (= expected-pung actual-pung))
-      (is (= expected-rest actual-rest))))
-  (testing "Are valid double-choice pungs claimed?"
-    (let [[tile hand-notation expected-melds] get-pung-melds-double-choice-test-case
-          hand (d.tiles/tiles-from-notation hand-notation)
-          expected-melds (mapv #(mapv d.tiles/tiles-from-notation %) expected-melds)
-          actual-melds (get-pung-melds tile hand)]
-      (is (= 2 (count actual-melds)))
-      (doseq [expected-meld expected-melds]
-        (is (some #(= expected-meld %) actual-melds))))))
+  (verify-get-melds get-pung-melds-test-cases get-pung-melds "pung"))
 
 (def get-chow-melds-test-cases
-  [(d.tiles/->Tile :man 3) "1245m" [["123m" "45m"] ["234m" "15m"] ["345m" "12m"]]])
+  [
+    [(d.tiles/->Tile :zi 5) "2p3s11m34z" nil]
+    [(d.tiles/->Tile :pin 7) "46p3s11m34z" nil]
+    [(d.tiles/->Tile :man 3) "1245m" [["123m" "45m"] ["234m" "15m"] ["345m" "12m"]]]
+    [(d.tiles/->Tile :sou 4) "34067s" [["340s" "467s"] ["406s" "347s"]]]
+    [(d.tiles/->Tile :pin 0) "34567p" [["340p" "567p"] ["406p" "357p"] ["067p" "345p"]]]
+    [(d.tiles/->Tile :sou 2) "13567s" [["123s" "567s"]]]
+    [(d.tiles/->Tile :man 2) "134567m" [["123m" "4567m"] ["234m" "1567m"]]]])
 
 (deftest get-chow-melds-is-correct
-  (testing "Are valid chows claimed?"
-    (let [[tile hand-notation expected-melds] get-chow-melds-test-cases
-          hand (d.tiles/tiles-from-notation hand-notation)
-          expected-melds (mapv #(mapv d.tiles/tiles-from-notation %) expected-melds)
-          actual-melds (get-chow-melds tile hand)]
-      (is (= (count expected-melds) (count actual-melds)))
-      (doseq [expected-meld expected-melds]
-        (is (some #(= expected-meld %) actual-melds))))))
+  (verify-get-melds get-chow-melds-test-cases get-chow-melds "chow"))
