@@ -5,6 +5,9 @@
 (defn Tile->str [tile]
   (str (:rank tile) (second (str (:suit tile)))))
 
+(defn get-non-dora-rank [{:keys [suit rank]}]
+  (if (= rank 0) 5 rank))
+
 (def tile-suits [:pin :sou :man :zi])
 
 (def number-tiles
@@ -36,6 +39,11 @@
           (= x-rank 0) (cond (= y-rank 5) 0 (< y-rank 5) 1 :else -1)
           (= y-rank 0) (cond (= x-rank 5) 0 (< x-rank 5) -1 :else 1)
           :else (compare x-rank y-rank))))
+
+(defn =ranks-ignoring-dora [x y]
+  (let [x (if (= x 0) 5 x)
+        y (if (= y 0) 5 y)]
+    (= x y)))
 
 (defn =ignoring-dora [x y]
   (= 0 (compare-tiles-ignoring-dora x y)))

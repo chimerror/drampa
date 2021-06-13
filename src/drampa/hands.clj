@@ -1,5 +1,6 @@
 (ns drampa.hands
-  (:require [drampa.tiles :as d.tiles]))
+  (:require [drampa.tiles :as d.tiles]
+            [drampa.utils :refer :all]))
 
 (defn replace-red-dora [hand]
   (mapv #(let [{:keys [suit rank] :as tile} %] (if (= rank 0) (d.tiles/->Tile suit 5) tile)) hand))
@@ -54,16 +55,50 @@
       (= 7 number-of-melds) (and (= 0 (count trios)) (= 7 (count pairs)))
       :else false)))
 
-(defn partition-into-three [predicate coll]
-  (let [before (take-while #(not (predicate %)) coll)
-        desired (->>  coll
-                      (drop-while #(not (predicate %)))
-                      (take-while predicate))
-        after (->>  coll
-                    (drop-while #(not (predicate %)))
-                    (drop-while predicate)
-                    (take-while #(not (predicate %))))]
-    [before desired after]))
+(defn tile-is-in-chow-range? [{:keys[suit rank] :as tile} chow-suit starting-rank]
+  (let [non-dora-rank (d.tiles/get-non-dora-rank tile)]
+    (and (= chow-suit suit) (>= non-dora-rank starting-rank) (<= non-dora-rank (+ 2 starting-rank)))))
+
+(defn- get-chow-match-tile-by-rank [desired-rank {:keys [rank] :as tile} chow-matches]
+  (if (d.tiles/=ranks-ignoring-dora desired-rank rank)
+    tile
+    (first-where #(d.tiles/=ranks-ignoring-dora desired-rank (:rank %)) chow-matches)))
+
+(defn- remove-chow-match-tile-by-rank [desired-rank {:keys [rank] :as tile} chow-matches]
+  (if (d.tiles/=ranks-ignoring-dora desired-rank rank)
+    chow-matches
+    (let [[before-desired desired-matches after-desired]
+                    (partition-into-three #(d.tiles/=ranks-ignoring-dora desired-rank (:rank %)) chow-matches)]
+      (concat before-desired (drop 1 desired-matches) after-desired))))
+
+(defn get-chow-melds
+  ([hand] (get-chow-melds (first hand) (next hand)))
+  ([{:keys [suit rank] :as tile} hand]
+    (if (= suit :zi)
+      nil
+      (let [non-dora-rank (d.tiles/get-non-dora-rank tile)
+            first-starting-rank (cond (<= non-dora-rank 2) 1
+                                (>= non-dora-rank 8) 7
+                                :else (- non-dora-rank 2))
+            last-starting-rank (+ first-starting-rank 2)
+            last-starting-rank (if (> last-starting-rank 7) 7 last-starting-rank)
+            result []]
+        (keep identity
+          (for [lowest-rank (range first-starting-rank (inc last-starting-rank))
+                :let [
+                  [before chow-matches after] (partition-into-three #(tile-is-in-chow-range? % suit lowest-rank) hand)
+                  lowest-tile (get-chow-match-tile-by-rank lowest-rank tile chow-matches)
+                  middle-rank (inc lowest-rank)
+                  middle-tile (get-chow-match-tile-by-rank middle-rank tile chow-matches)
+                  last-rank (+ 2 lowest-rank)
+                  last-tile (get-chow-match-tile-by-rank last-rank tile chow-matches)]]
+            (if (or (nil? lowest-tile) (nil? middle-tile) (nil? last-tile))
+              nil
+              (let [new-chow-matches (->> chow-matches
+                                          (remove-chow-match-tile-by-rank lowest-rank tile)
+                                          (remove-chow-match-tile-by-rank middle-rank tile)
+                                          (remove-chow-match-tile-by-rank last-rank tile))]
+              [[lowest-tile middle-tile last-tile] (concat before new-chow-matches after)]))))))))
 
 (defn get-pung-melds
   ([hand] (get-pung-melds (first hand) (next hand)))

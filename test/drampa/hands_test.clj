@@ -109,3 +109,16 @@
       (is (= 2 (count actual-melds)))
       (doseq [expected-meld expected-melds]
         (is (some #(= expected-meld %) actual-melds))))))
+
+(def get-chow-melds-test-cases
+  [(d.tiles/->Tile :man 3) "1245m" [["123m" "45m"] ["234m" "15m"] ["345m" "12m"]]])
+
+(deftest get-chow-melds-is-correct
+  (testing "Are valid chows claimed?"
+    (let [[tile hand-notation expected-melds] get-chow-melds-test-cases
+          hand (d.tiles/tiles-from-notation hand-notation)
+          expected-melds (mapv #(mapv d.tiles/tiles-from-notation %) expected-melds)
+          actual-melds (get-chow-melds tile hand)]
+      (is (= (count expected-melds) (count actual-melds)))
+      (doseq [expected-meld expected-melds]
+        (is (some #(= expected-meld %) actual-melds))))))

@@ -1,12 +1,10 @@
-(ns drampa.players)
+(ns drampa.players
+  (:require [drampa.utils :refer :all]))
 
 (defrecord Player [score wind hand melds discards discard-logic claim-logic])
 
 (defn get-player-by-wind [players wind]
-  (->>
-    players
-    (filter #(= wind (:wind %)))
-    (first)))
+  (first-where #(= wind (:wind %)) players))
 
 (defmulti make-discard (fn [{:keys [active-player-wind] :as match} _]
   (:discard-logic (get-player-by-wind (:players match) active-player-wind))))
