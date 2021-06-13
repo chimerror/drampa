@@ -74,7 +74,7 @@
   (testing "Are pairs not considered kan?"
     (is (= false (is-kan? (d.tiles/tiles-from-notation "66z"))))))
 
-(def get-pung-claims-single-choice-test-cases
+(def get-pung-melds-single-choice-test-cases
   [
     [(d.tiles/->Tile :pin 7) "777p3s11m66z" "777p" "7p3s11m66z"]
     [(d.tiles/->Tile :sou 4) "067p1234456s11m66z" "444s" "067p12356s11m66z"]
@@ -82,30 +82,30 @@
     [(d.tiles/->Tile :zi 5) "2p3s11m55z" "555z" "2p3s11m"]
     [(d.tiles/->Tile :man 0) "2p3s55m77z" "055m" "2p3s77z"]])
 
-(def get-pung-claims-double-choice-test-case
+(def get-pung-melds-double-choice-test-case
   [(d.tiles/->Tile :sou 5) "067p12344550s11m66z" [["555s" "067p123440s11m66z"] ["505s" "067p123445s11m66z"]]])
 
-(deftest get-pung-claims-is-correct
+(deftest get-pung-melds-is-correct
   (testing "Are valid single-choice pungs claimed?"
-    (doseq [test-case get-pung-claims-single-choice-test-cases
+    (doseq [test-case get-pung-melds-single-choice-test-cases
             :let [
               [tile hand-notation pung-notation rest-notation] test-case
               hand (d.tiles/tiles-from-notation hand-notation)
               expected-pung (d.tiles/tiles-from-notation pung-notation)
               expected-rest (d.tiles/tiles-from-notation rest-notation)
-              pung-claims (get-pung-claims tile hand)
-              pung-claim (first pung-claims)
-              [actual-pung actual-rest] pung-claim]]
-      (is (not (nil? pung-claims)))
-      (is (= 1 (count pung-claims)))
-      (is (not (nil? pung-claim)))
+              pung-melds (get-pung-melds tile hand)
+              pung-meld (first pung-melds)
+              [actual-pung actual-rest] pung-meld]]
+      (is (not (nil? pung-melds)))
+      (is (= 1 (count pung-melds)))
+      (is (not (nil? pung-meld)))
       (is (= expected-pung actual-pung))
       (is (= expected-rest actual-rest))))
   (testing "Are valid double-choice pungs claimed?"
-    (let [[tile hand-notation expected-claims] get-pung-claims-double-choice-test-case
+    (let [[tile hand-notation expected-melds] get-pung-melds-double-choice-test-case
           hand (d.tiles/tiles-from-notation hand-notation)
-          expected-claims (mapv #(mapv d.tiles/tiles-from-notation %) expected-claims)
-          actual-claims (get-pung-claims tile hand)]
-      (is (= 2 (count actual-claims)))
-      (doseq [expected-claim expected-claims]
-        (is (some #(= expected-claim %) actual-claims))))))
+          expected-melds (mapv #(mapv d.tiles/tiles-from-notation %) expected-melds)
+          actual-melds (get-pung-melds tile hand)]
+      (is (= 2 (count actual-melds)))
+      (doseq [expected-meld expected-melds]
+        (is (some #(= expected-meld %) actual-melds))))))

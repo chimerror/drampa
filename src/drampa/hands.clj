@@ -65,8 +65,8 @@
                     (take-while #(not (predicate %))))]
     [before desired after]))
 
-(defn get-pung-claims
-  ([hand] (get-pung-claims (first hand) (next hand)))
+(defn get-pung-melds
+  ([hand] (get-pung-melds (first hand) (next hand)))
   ([{:keys [suit rank] :as tile} hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
       nil
