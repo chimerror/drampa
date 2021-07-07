@@ -4,6 +4,14 @@
 
 (defrecord Match [wall dead-wall players active-player-wind prevailing-wind dora ura-dora])
 
+(defn print-friendly-match [{:keys [wall dead-wall players dora ura-dora] :as match}]
+  (-> match
+      (assoc :wall (d.tiles/notation-from-tiles wall))
+      (assoc :dead-wall (d.tiles/notation-from-tiles dead-wall))
+      (assoc :players (map d.players/print-friendly-player players))
+      (assoc :dora (d.tiles/notation-from-tiles dora))
+      (assoc :ura-dora (d.tiles/notation-from-tiles ura-dora))))
+
 (def starting-score 30000)
 
 (def wind-order [:east :south :west :north])

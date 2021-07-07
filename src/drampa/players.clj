@@ -1,7 +1,14 @@
 (ns drampa.players
-  (:require [drampa.utils :refer :all]))
+  (:require [drampa.tiles :as d.tiles]
+            [drampa.utils :refer :all]))
 
 (defrecord Player [score wind hand melds discards discard-logic claim-logic])
+
+(defn print-friendly-player [{:keys [hand melds discards] :as player}]
+  (-> player
+      (assoc :hand (d.tiles/notation-from-tiles (d.tiles/sort-tiles hand)))
+      (assoc :melds (map d.tiles/notation-from-tiles melds))
+      (assoc :discards (d.tiles/notation-from-tiles discards))))
 
 (defn get-player-by-wind [players wind]
   (first-where #(= wind (:wind %)) players))
