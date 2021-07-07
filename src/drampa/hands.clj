@@ -60,15 +60,15 @@
     (and (= chow-suit suit) (>= non-dora-rank starting-rank) (<= non-dora-rank (+ 2 starting-rank)))))
 
 (defn- get-chow-match-tile-by-rank [desired-rank {:keys [rank] :as tile} chow-matches]
-  (if (d.tiles/=ranks-ignoring-dora desired-rank rank)
+  (if (d.tiles/same-ranks-ignoring-dora? desired-rank rank)
     tile
-    (first-where #(d.tiles/=ranks-ignoring-dora desired-rank (:rank %)) chow-matches)))
+    (first-where #(d.tiles/same-ranks-ignoring-dora? desired-rank (:rank %)) chow-matches)))
 
 (defn- remove-chow-match-tile-by-rank [desired-rank {:keys [rank] :as tile} chow-matches]
-  (if (d.tiles/=ranks-ignoring-dora desired-rank rank)
+  (if (d.tiles/same-ranks-ignoring-dora? desired-rank rank)
     chow-matches
     (let [[before-desired desired-matches after-desired]
-                    (partition-into-three #(d.tiles/=ranks-ignoring-dora desired-rank (:rank %)) chow-matches)]
+                    (partition-into-three #(d.tiles/same-ranks-ignoring-dora? desired-rank (:rank %)) chow-matches)]
       (concat before-desired (drop 1 desired-matches) after-desired))))
 
 (defn get-chow-melds
@@ -104,9 +104,9 @@
 (defn get-pung-melds
   ([hand] (get-pung-melds (last hand) (butlast hand)))
   ([{:keys [suit rank] :as tile} hand]
-    (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
+    (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/same-tile-ignoring-dora? tile %) hand))
       nil
-      (let [[before pung-matches after] (partition-into-three #(d.tiles/=ignoring-dora tile %) hand)]
+      (let [[before pung-matches after] (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand)]
         (if (< (count pung-matches) 2)
           nil
           (if (or (= :zi suit) (not= 5 rank) (not-any? #(= 0 (:rank %)) pung-matches) (< (count pung-matches) 3))
@@ -122,9 +122,9 @@
 (defn get-kong-melds
   ([hand] (get-kong-melds (last hand) (butlast hand)))
   ([{:keys [suit rank] :as tile} hand]
-    (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
+    (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/same-tile-ignoring-dora? tile %) hand))
       nil
-      (let [[before kong-matches after] (partition-into-three #(d.tiles/=ignoring-dora tile %) hand)]
+      (let [[before kong-matches after] (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand)]
         (if (< (count kong-matches) 3)
           nil
           (let [kong (conj kong-matches tile)

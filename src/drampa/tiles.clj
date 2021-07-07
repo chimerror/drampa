@@ -40,12 +40,15 @@
           (= y-rank 0) (cond (= x-rank 5) 0 (< x-rank 5) -1 :else 1)
           :else (compare x-rank y-rank))))
 
-(defn =ranks-ignoring-dora [x y]
+(defn same-ranks-ignoring-dora? [x y]
   (let [x (if (= x 0) 5 x)
         y (if (= y 0) 5 y)]
     (= x y)))
 
-(defn =ignoring-dora [x y]
+(defn same-tile? [x y]
+  (= 0 (compare-tiles x y)))
+
+(defn same-tile-ignoring-dora? [x y]
   (= 0 (compare-tiles-ignoring-dora x y)))
 
 (defn sort-tiles [tiles]
