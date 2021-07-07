@@ -72,7 +72,7 @@
       (concat before-desired (drop 1 desired-matches) after-desired))))
 
 (defn get-chow-melds
-  ([hand] (get-chow-melds (first hand) (next hand)))
+  ([hand] (get-chow-melds (last hand) (butlast hand)))
   ([{:keys [suit rank] :as tile} hand]
     (if (= suit :zi)
       nil
@@ -102,7 +102,7 @@
               (as-> cm (if (empty? cm) nil cm)))))))
 
 (defn get-pung-melds
-  ([hand] (get-pung-melds (first hand) (next hand)))
+  ([hand] (get-pung-melds (last hand) (butlast hand)))
   ([{:keys [suit rank] :as tile} hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
       nil
@@ -120,7 +120,7 @@
                 [[pung-a rest-a] [pung-b rest-b]])))))))
 
 (defn get-kong-melds
-  ([hand] (get-kong-melds (first hand) (next hand)))
+  ([hand] (get-kong-melds (last hand) (butlast hand)))
   ([{:keys [suit rank] :as tile} hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/=ignoring-dora tile %) hand))
       nil
