@@ -1,5 +1,6 @@
 (ns drampa.players
-  (:require [drampa.tiles :as d.tiles]
+  (:require [drampa.claims :as d.claims]
+            [drampa.tiles :as d.tiles]
             [drampa.utils :refer :all]))
 
 (defrecord Player [score wind hand melds discards discard-logic claim-logic])
@@ -15,26 +16,46 @@
 
 (defmulti make-discard (fn [{:keys [active-player-wind] :as match} _]
   (:discard-logic (get-player-by-wind (:players match) active-player-wind))))
+
 (defmethod make-discard :random [match discard-context]
   (let [{:keys [players active-player-wind]} match
         {:keys [hand]} (get-player-by-wind players active-player-wind)
-        legal-hand (vec (filter #(not= :illegal (get discard-context %)) hand))
+        legal-hand (filterv #(not (some #{%} (:illegal discard-context))) hand)
         index-to-discard (rand-int (count legal-hand))]
     (get legal-hand index-to-discard)))
 
-(defmulti make-claim (fn [match claiming-player _]
-  (:claim-logic (get-player-by-wind match claiming-player))))
-(defmethod make-claim :wins-only [_ _ legal-calls]
-  (cond (:ron legal-calls) :ron
-        (:tsumo legal-calls) :tsumo
+(defmethod make-discard :always-last [match discard-context]
+  (let [{:keys [players active-player-wind]} match
+        {:keys [hand]} (get-player-by-wind players active-player-wind)
+        legal-hand (filterv #(not (some #{%} (:illegal discard-context))) hand)]
+    (last legal-hand)))
+
+(defmulti make-claim (fn [{:keys [players]} claiming-wind _]
+  (:claim-logic (get-player-by-wind players claiming-wind))))
+
+(defmethod make-claim :wins-only [{:keys [active-player-wind]} claiming-wind legal-calls]
+  (cond (:ron legal-calls) (d.claims/->Claim claiming-wind :ron nil active-player-wind)
+        (:tsumo legal-calls) (d.claims/->Claim claiming-wind :tsumo nil active-player-wind)
         :else nil))
-(defmethod make-claim :random [_ _ legal-calls]
-  (cond (:ron legal-calls) :ron
-        (:tsumo legal-calls) :tsumo
-        (and (:kan legal-calls) (<= (rand) 0.75)) :kan
-        (and (:pon legal-calls) (<= (rand) 0.50)) :pon
+
+(defmethod make-claim :always-claim [{:keys [active-player-wind]} claiming-wind legal-calls]
+  (cond (:ron legal-calls) (d.claims/->Claim claiming-wind :ron nil active-player-wind)
+        (:tsumo legal-calls) (d.claims/->Claim claiming-wind :tsumo nil active-player-wind)
+        (:kan legal-calls) (d.claims/->Claim claiming-wind :kan nil active-player-wind)
+        (:pon legal-calls) (d.claims/->Claim claiming-wind :pon (first (:pon legal-calls)) active-player-wind)
+        (:chii legal-calls) (d.claims/->Claim claiming-wind :chii (first (:chii legal-calls)) active-player-wind)
+        :else nil))
+
+(defmethod make-claim :random [{:keys [active-player-wind]} claiming-wind legal-calls]
+  (cond (:ron legal-calls) (d.claims/->Claim claiming-wind :ron nil active-player-wind)
+        (:tsumo legal-calls) (d.claims/->Claim claiming-wind :tsumo nil active-player-wind)
+        (and (:kan legal-calls) (<= (rand) 0.75)) (d.claims/->Claim claiming-wind :kan nil active-player-wind)
+        (and (:pon legal-calls) (<= (rand) 0.50))
+          (let [pon-options (:pon legal-calls)
+                option-index (rand-int (count pon-options))]
+            (d.claims/->Claim claiming-wind :pon (get pon-options option-index) active-player-wind))
         (and (:chii legal-calls) (<= (rand) 0.25))
           (let [chii-options (:chii legal-calls)
                 option-index (rand-int (count chii-options))]
-            [:chii (get chii-options option-index)])
+            (d.claims/->Claim claiming-wind :chii (get chii-options option-index) active-player-wind))
         :else nil))

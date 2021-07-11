@@ -1,6 +1,9 @@
 (ns drampa.matches
-  (:require [drampa.tiles :as d.tiles]
-            [drampa.players :as d.players]))
+  (:require [drampa.claims :as d.claims]
+            [drampa.hands :as d.hands]
+            [drampa.tiles :as d.tiles]
+            [drampa.players :as d.players]
+            [drampa.utils :refer :all]))
 
 (defrecord Match [wall dead-wall players active-player-wind prevailing-wind dora ura-dora])
 
@@ -16,18 +19,29 @@
 
 (def wind-order [:east :south :west :north])
 
-(defn fill-players [starting-index]
-  (loop  [current-index starting-index
-          winds wind-order
-          result (vec (repeat 4 nil))]
-    (if (empty? winds)
-      result
-      (let [next-index (if (= current-index 3) 0 (inc current-index))
-            wind (first winds)]
-        (recur
-          next-index
-          (next winds)
-          (assoc result current-index (d.players/->Player starting-score wind [] [] [] :random :random)))))))
+(defn fill-players
+  ([starting-index] (fill-players starting-index :random :random))
+  ([starting-index discard-logic claim-logic]
+    (loop  [current-index starting-index
+            winds wind-order
+            result (vec (repeat 4 nil))]
+      (if (empty? winds)
+        result
+        (let [next-index (if (= current-index 3) 0 (inc current-index))
+              wind (first winds)]
+          (recur
+            next-index
+            (next winds)
+            (assoc result current-index
+              (d.players/->Player starting-score wind [] [] [] discard-logic claim-logic))))))))
+
+(defn get-active-player-index [{:keys [players active-player-wind] :as match}]
+  (let [player-winds (mapv :wind players)]
+    (.indexOf player-winds active-player-wind)))
+
+(defn get-player-index-by-wind [{:keys [players] :as match} wind]
+  (let [player-winds (mapv :wind players)]
+    (.indexOf player-winds wind)))
 
 (defn break-wall-at [wall dice-roll]
   (let [dead-wall-start-index (- (get [134 32 64 100] (mod dice-roll 4)) (* 2 (dec dice-roll)))
@@ -86,22 +100,54 @@
         (let [[new-wall new-hand] (reduce deal-to-hand [current-wall (hands wind-to-deal-to)] (range tile-count))]
           (recur new-wall rest-of-deals (assoc hands wind-to-deal-to new-hand))))))
 
-(defn get-initial-match []
-  (let [wall (vec (shuffle d.tiles/initial-wall))
-        dice-roll (+ (inc (rand-int 6)) (inc (rand-int 6)))
-        [live-wall dead-wall] (break-wall-at wall dice-roll)
-        players (fill-players (rand-int 4))]
-  (-> (->Match live-wall dead-wall players :east :east [] [])
-      (deal-initial-hands)
-      (reveal-dora))))
+(defn get-random-wall [] (vec (shuffle d.tiles/initial-wall)))
 
-;; (defn perform-draw [{:keys [wall players active-player-wind] :as match}]
-;;   (let [{active-hand :hand :as active-player} (d.players/get-player-by-wind players active-player-wind)
-;;         first-draw? (and (= :east active-player-wind) (= 14 (count active-hand)))
-;;         [new-wall active-hand] (if first-draw? [wall active-hand] (deal-to-hand [wall active-hand] nil))
-;;         new-match
-;;           (-> match
-;;               (assoc :wall new-wall)
-;;               (update-in [:players] #(if (= active-player-wind (:wind %)) (assoc % :hand active-hand) %)))
-;;         discarded-tile (d.players/make-discard new-match)]))
+(defn get-random-dice-roll [] (+ (inc (rand-int 6)) (inc (rand-int 6))))
 
+(defn get-random-players [] (fill-players (rand-int 4)))
+
+(defn get-initial-match
+  ([] (get-initial-match (get-random-wall) (get-random-dice-roll) (get-random-players)))
+  ([wall dice-roll players]
+    (let [[live-wall dead-wall] (break-wall-at wall dice-roll)]
+      (-> (->Match live-wall dead-wall players :east :east [] [])
+          (deal-initial-hands)
+          (reveal-dora)))))
+
+(defn get-claims [{:keys [wall players active-player-wind] :as match}]
+  (let [active-player-index (get-active-player-index match)
+        discard-to-claim (last (get-in players [active-player-index :discards]))
+        chii-player-index (if (= 3 active-player-index) 0 (inc active-player-index))]
+      (for [current-index (range 4)
+            :let [{claiming-wind :wind claiming-hand :hand :as claiming-player} (get players current-index)
+                  chow-melds (d.hands/get-chow-melds discard-to-claim claiming-hand)
+                  chii-claims (not-empty (mapv #(get % 0) chow-melds))
+                  pung-melds (d.hands/get-pung-melds discard-to-claim claiming-hand)
+                  pon-claims (not-empty (mapv #(get % 0) pung-melds))]] ;; TODO: kong and win melds need to be offered too
+        (cond (= active-player-index current-index) nil
+              (= chii-player-index current-index)
+                (d.players/make-claim match claiming-wind {:chii chii-claims :pon pon-claims})
+              :else (d.players/make-claim match claiming-wind {:pon pon-claims})))))
+
+(defn offer-claims [{:keys [wall players active-player-wind] :as match}]
+  (let [active-player-index (get-active-player-index match)
+        claims (sort-by d.claims/compare-claims (keep identity (get-claims match)))])) ;; TODO: respond to claims
+
+(defn perform-draw [{:keys [wall players active-player-wind] :as match}]
+  (let [active-player-index (get-active-player-index match)
+        {active-hand :hand :as active-player} (get players active-player-index)
+        already-drew? (= 14 (count active-hand))
+        [new-wall active-hand] (if already-drew? [wall active-hand] (deal-to-hand [wall active-hand] nil))
+        kong-melds (d.hands/get-kong-melds active-hand)]
+    (if (not (nil? kong-melds))
+        nil ;; TODO: offer player kong, handle replacement tile after kong
+        (let [discarded-tile (d.players/make-discard match {})
+              [before-discard discard-matches after-discard]
+                (partition-into-three #(d.tiles/same-tile? discarded-tile %) active-hand)
+              new-hand (concat before-discard (drop 1 discard-matches) after-discard)]
+          (-> match
+              (assoc :wall new-wall)
+              (update-in [:players active-player-index]
+                #(->  %
+                      (assoc :hand new-hand)
+                      (update :discards conj discarded-tile))))))))

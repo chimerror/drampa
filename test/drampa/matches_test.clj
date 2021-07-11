@@ -1,6 +1,7 @@
 (ns drampa.matches-test
   (:require [clojure.test :refer :all]
             [drampa.matches :refer :all]
+            [drampa.claims :as d.claims]
             [drampa.tiles :as d.tiles]
             [drampa.players :as d.players]))
 
@@ -169,3 +170,74 @@
                 :let [expected-hand (expected-hands wind)]]
           (testing (str "Is the " wind " hand correct?")
             (is (= expected-hand (d.tiles/sort-tiles hand)))))))))
+
+(def sentinel-tile (d.tiles/->Tile :zi 8))
+
+(def sentinel-tile-dead-wall (d.tiles/->Tile :zi 9))
+
+(defn test-match-from-starting-hands [hands]
+  (let [[east-hand south-hand west-hand north-hand] hands
+        hand-tiles (apply concat hands)
+        live-wall-beginning
+          (concat
+            (subvec east-hand 0 4)
+            (subvec south-hand 0 4)
+            (subvec west-hand 0 4)
+            (subvec north-hand 0 4)
+            (subvec east-hand 4 8)
+            (subvec south-hand 4 8)
+            (subvec west-hand 4 8)
+            (subvec north-hand 4 8)
+            (subvec east-hand 8 12)
+            (subvec south-hand 8 12)
+            (subvec west-hand 8 12)
+            (subvec north-hand 8 12)
+            [(get east-hand 12) (get south-hand 12) (get west-hand 12) (get north-hand 12) (get east-hand 13)])
+        wall
+          (vec (concat
+            (repeat 6 sentinel-tile-dead-wall)
+            (repeat 69 sentinel-tile)
+            (reverse live-wall-beginning)
+            (repeat 8 sentinel-tile-dead-wall)))
+        players (fill-players 0 :always-last :always-claim)]
+    (get-initial-match wall 4 players)))
+
+(def get-claims-test-cases [
+  [
+    ["1111222233334z2p" "444z11112222m13p" "555566667777z1s" "3333444455506m"]
+    [nil {:claiming-wind :south :claim-type :chii :choice "123p" :discarding-wind :east} nil nil]]
+  [
+    ["1111222233334z0p" "444z11112222m46p" "555566667777z1s" "3333444455506m"]
+    [nil {:claiming-wind :south :claim-type :chii :choice "406p" :discarding-wind :east} nil nil]]
+  [
+    ["1111222233334p2z" "444z11112222m13z" "555566667777p1s" "3333444455506m"]
+    [nil nil nil nil]]
+  [
+    ["1111222233334z2p" "555566667777z1s" "444z11112222m13p" "3333444455506m"]
+    [nil nil nil nil]]
+  [
+    ["1111222233334z2p" "444z11112222m13p" "55556666777z22p" "3333444455506m"]
+    [
+      nil
+      {:claiming-wind :south :claim-type :chii :choice "123p" :discarding-wind :east}
+      {:claiming-wind :west :claim-type :pon :choice "222p" :discarding-wind :east}
+      nil]]
+  [
+    ["1111222233334z2p" "444z11112222m13s" "3333444455506m" "55556666777z22p"]
+    [nil nil nil {:claiming-wind :north :claim-type :pon :choice "222p" :discarding-wind :east}]]
+    ])
+
+(defn- load-get-claims-expected-claim [claim-map]
+  (if (nil? claim-map)
+      nil
+      (d.claims/map->Claim (update claim-map :choice d.tiles/tiles-from-notation))))
+
+(deftest get-claims-is-correct
+  (testing "Are claims correctly offered and taken from known walls?"
+    (doseq [[starting-hands-notation expected-claims-maps] get-claims-test-cases
+            :let [starting-hands (mapv d.tiles/tiles-from-notation starting-hands-notation)
+                  expected-claims (mapv load-get-claims-expected-claim expected-claims-maps)]]
+      (let [match (-> (test-match-from-starting-hands starting-hands)
+                      (perform-draw))
+            actual-claims (get-claims match)]
+        (is (= expected-claims actual-claims))))))
