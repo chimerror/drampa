@@ -123,11 +123,13 @@
                   chow-melds (d.hands/get-chow-melds discard-to-claim claiming-hand)
                   chii-claims (not-empty (mapv #(get % 0) chow-melds))
                   pung-melds (d.hands/get-pung-melds discard-to-claim claiming-hand)
-                  pon-claims (not-empty (mapv #(get % 0) pung-melds))]] ;; TODO: kong and win melds need to be offered too
+                  pon-claims (not-empty (mapv #(get % 0) pung-melds))
+                  kong-melds (d.hands/get-kong-melds discard-to-claim claiming-hand)
+                  kan-claims (not-empty (mapv #(get % 0) kong-melds))]] ;; TODO: win melds need to be offered too
         (cond (= active-player-index current-index) nil
               (= chii-player-index current-index)
-                (d.players/make-claim match claiming-wind {:chii chii-claims :pon pon-claims})
-              :else (d.players/make-claim match claiming-wind {:pon pon-claims})))))
+                (d.players/make-claim match claiming-wind {:chii chii-claims :pon pon-claims :kan kan-claims})
+              :else (d.players/make-claim match claiming-wind {:pon pon-claims :kan kan-claims})))))
 
 (defn offer-claims [{:keys [wall players active-player-wind] :as match}]
   (let [active-player-index (get-active-player-index match)

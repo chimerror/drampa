@@ -225,6 +225,16 @@
   [
     ["1111222233334z2p" "444z11112222m13s" "3333444455506m" "55556666777z22p"]
     [nil nil nil {:claiming-wind :north :claim-type :pon :choice "222p" :discarding-wind :east}]]
+  [
+    ["1111222233334z5p" "444z1111222m550p" "3333444455506m" "55556666777z22p"]
+    [nil {:claiming-wind :south :claim-type :kan :choice nil :discarding-wind :east} nil nil]]
+  [
+    ["1111222233334z2p" "444z11112222m13p" "5555666677z222p" "3333444455506m"]
+    [
+      nil
+      {:claiming-wind :south :claim-type :chii :choice "123p" :discarding-wind :east}
+      {:claiming-wind :west :claim-type :kan :choice nil :discarding-wind :east}
+      nil]]
     ])
 
 (defn- load-get-claims-expected-claim [claim-map]

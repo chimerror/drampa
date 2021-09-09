@@ -70,7 +70,9 @@
     (map #(->Tile suit (Integer/parseInt (str %))) tile-numbers)))
 
 (defn tiles-from-notation [notation]
-  (vec (apply concat (map tiles-from-notation-group (re-seq notation-group-regex notation)))))
+  (if (nil? notation)
+    nil
+    (vec (apply concat (map tiles-from-notation-group (re-seq notation-group-regex notation))))))
 
 (defn notation-from-tiles [tiles]
   (if (nil? tiles)
