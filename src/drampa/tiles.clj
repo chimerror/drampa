@@ -5,7 +5,7 @@
 (defn Tile->str [tile]
   (str (:rank tile) (second (str (:suit tile)))))
 
-(defn get-non-dora-rank [{:keys [suit rank]}]
+(defn get-non-dora-rank [{:keys [rank]}]
   (if (= rank 0) 5 rank))
 
 (def tile-suits [:pin :sou :man :zi])
