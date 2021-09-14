@@ -131,3 +131,23 @@
           (let [kong (conj kong-matches tile)
                 rest (concat before after)]
             [[kong rest]]))))))
+
+(defn separate-into-melds
+  ([hand] (separate-into-melds hand last))
+  ([hand meld-selection-function]
+    (loop  [to-separate hand
+            melds []
+            non-meldable-tiles []]
+      (cond
+        (empty? to-separate) [melds non-meldable-tiles]
+        (= (count to-separate) 1) [melds (conj non-meldable-tiles (last to-separate))]
+        :else (let [candidate-tile (last to-separate)
+                    rest-of-tiles (butlast to-separate)
+                    chow-melds (get-chow-melds candidate-tile rest-of-tiles)
+                    pung-melds (get-pung-melds candidate-tile rest-of-tiles)
+                    kong-melds (get-kong-melds candidate-tile rest-of-tiles)
+                    possible-melds (concat chow-melds pung-melds kong-melds)]
+                (if (empty? possible-melds)
+                  (recur rest-of-tiles melds (conj non-meldable-tiles candidate-tile))
+                  (let [[new-meld new-rest] (meld-selection-function melds)]
+                    (recur new-rest (conj melds new-meld) non-meldable-tiles))))))))

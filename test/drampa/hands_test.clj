@@ -100,7 +100,8 @@
     [(d.tiles/->Tile :sou 4) "34067s" [["340s" "467s"] ["406s" "347s"]]]
     [(d.tiles/->Tile :pin 0) "34567p" [["340p" "567p"] ["406p" "357p"] ["067p" "345p"]]]
     [(d.tiles/->Tile :sou 2) "13567s" [["123s" "567s"]]]
-    [(d.tiles/->Tile :man 2) "134567m" [["123m" "4567m"] ["234m" "1567m"]]]])
+    [(d.tiles/->Tile :man 2) "134567m" [["123m" "4567m"] ["234m" "1567m"]]]
+    [(d.tiles/->Tile :sou 2) "123p13567s123m" [["123s" "123p567s123m"]]]])
 
 (deftest get-chow-melds-is-correct
   (verify-get-melds get-chow-melds-test-cases get-chow-melds "chow"))
