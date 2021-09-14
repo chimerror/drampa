@@ -16,7 +16,7 @@
         rank (range 1 10)]
     (->Tile suit (cond (and (= current-tile 0) (= rank 5)) 0 :else rank))))
 (def honor-tiles
-  (for [current-tile (range 4)
+  (for [_ (range 4)
         rank (range 1 8)]
     (->Tile :zi rank)))
 
@@ -54,9 +54,11 @@
 (defn sort-tiles [tiles]
   (sort compare-tiles tiles))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn filter-by-suit [tiles suit]
   (filterv #(= suit (:suit %)) tiles))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn remove-by-suit [tiles suit]
   (remove #(= suit (:suit %)) tiles))
 

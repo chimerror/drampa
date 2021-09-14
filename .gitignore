@@ -23,3 +23,9 @@ pom.xml.asc
 .hg/
 
 .vscode/
+
+.calva/
+
+.clj-kondo/
+
+.lsp/

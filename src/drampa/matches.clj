@@ -3,7 +3,7 @@
             [drampa.hands :as d.hands]
             [drampa.tiles :as d.tiles]
             [drampa.players :as d.players]
-            [drampa.utils :refer :all]))
+            [drampa.utils :refer [partition-into-three]]))
 
 (defrecord Match [wall dead-wall players active-player-wind prevailing-wind dora ura-dora])
 
@@ -35,11 +35,12 @@
             (assoc result current-index
               (d.players/->Player starting-score wind [] [] [] discard-logic claim-logic))))))))
 
-(defn get-active-player-index [{:keys [players active-player-wind] :as match}]
+(defn get-active-player-index [{:keys [players active-player-wind]}]
   (let [player-winds (mapv :wind players)]
     (.indexOf player-winds active-player-wind)))
 
-(defn get-player-index-by-wind [{:keys [players] :as match} wind]
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
+(defn get-player-index-by-wind [{:keys [players]} wind]
   (let [player-winds (mapv :wind players)]
     (.indexOf player-winds wind)))
 
@@ -67,6 +68,7 @@
           (assoc :dora (conj dora next-dora))
           (assoc :ura-dora (conj ura-dora next-ura-dora)))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn get-dora-from-indicator [{indicator-suit :suit indicator-rank :rank}]
   (let [dora-rank
         (cond
@@ -91,7 +93,7 @@
         player-index (.indexOf player-winds wind)]
     (assoc-in match [:players player-index :hand] hand)))
 
-(defn deal-initial-hands [{:keys [wall players] :as match}]
+(defn deal-initial-hands [{:keys [wall] :as match}]
   (loop  [current-wall wall
           [[wind-to-deal-to tile-count :as current-deal] & rest-of-deals] deal-order
           hands {:east [] :south [] :west [] :north []}]
@@ -114,12 +116,12 @@
           (deal-initial-hands)
           (reveal-dora)))))
 
-(defn get-claims [{:keys [wall players active-player-wind] :as match}]
+(defn get-claims [{:keys [players] :as match}]
   (let [active-player-index (get-active-player-index match)
         discard-to-claim (last (get-in players [active-player-index :discards]))
         chii-player-index (if (= 3 active-player-index) 0 (inc active-player-index))]
       (for [current-index (range 4)
-            :let [{claiming-wind :wind claiming-hand :hand :as claiming-player} (get players current-index)
+            :let [{claiming-wind :wind claiming-hand :hand} (get players current-index)
                   chow-melds (d.hands/get-chow-melds discard-to-claim claiming-hand)
                   chii-claims (not-empty (mapv #(get % 0) chow-melds))
                   pung-melds (d.hands/get-pung-melds discard-to-claim claiming-hand)
@@ -131,13 +133,15 @@
                 (d.players/make-claim match claiming-wind {:chii chii-claims :pon pon-claims :kan kan-claims})
               :else (d.players/make-claim match claiming-wind {:pon pon-claims :kan kan-claims})))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var :unused-binding]}
 (defn offer-claims [{:keys [wall players active-player-wind] :as match}]
   (let [active-player-index (get-active-player-index match)
         claims (sort-by d.claims/compare-claims (keep identity (get-claims match)))])) ;; TODO: respond to claims
 
-(defn perform-draw [{:keys [wall players active-player-wind] :as match}]
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
+(defn perform-draw [{:keys [wall players] :as match}]
   (let [active-player-index (get-active-player-index match)
-        {active-hand :hand :as active-player} (get players active-player-index)
+        {active-hand :hand} (get players active-player-index)
         already-drew? (= 14 (count active-hand))
         [new-wall active-hand] (if already-drew? [wall active-hand] (deal-to-hand [wall active-hand] nil))
         kong-melds (d.hands/get-kong-melds active-hand)]

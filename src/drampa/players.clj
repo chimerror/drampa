@@ -1,7 +1,7 @@
 (ns drampa.players
   (:require [drampa.claims :as d.claims]
             [drampa.tiles :as d.tiles]
-            [drampa.utils :refer :all]))
+            [drampa.utils :refer [first-where]]))
 
 (defrecord Player [score wind hand melds discards discard-logic claim-logic])
 

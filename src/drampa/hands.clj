@@ -1,6 +1,6 @@
 (ns drampa.hands
   (:require [drampa.tiles :as d.tiles]
-            [drampa.utils :refer :all]))
+            [drampa.utils :refer [first-where partition-into-three]]))
 
 (defn replace-red-dora [hand]
   (mapv #(let [{:keys [suit rank] :as tile} %] (if (= rank 0) (d.tiles/->Tile suit 5) tile)) hand))
@@ -11,10 +11,10 @@
   (if (not= 3 (count hand))
     false
     (let [hand (sort-and-replace-red-dora hand)
-          [x y z :as hand] hand
-          {x-suit :suit x-rank :rank :as x} x
-          {y-suit :suit y-rank :rank :as y} y
-          {z-suit :suit z-rank :rank :as z} z]
+          [x y z] hand
+          {x-suit :suit x-rank :rank} x
+          {y-suit :suit y-rank :rank} y
+          {z-suit :suit z-rank :rank} z]
       (and
         (= x-suit y-suit z-suit)
         (not= :zi x-suit)
@@ -25,10 +25,10 @@
   (if (not= 3 (count hand))
     false
     (let [hand (sort-and-replace-red-dora hand)
-          [x y z :as hand] hand
-          {x-suit :suit x-rank :rank :as x} x
-          {y-suit :suit y-rank :rank :as y} y
-          {z-suit :suit z-rank :rank :as z} z]
+          [x y z] hand
+          {x-suit :suit x-rank :rank} x
+          {y-suit :suit y-rank :rank} y
+          {z-suit :suit z-rank :rank} z]
       (and
         (= x-suit y-suit z-suit)
         (= x-rank y-rank z-rank)))))
@@ -37,15 +37,16 @@
   (if (not= 4 (count hand))
     false
     (let [hand (sort-and-replace-red-dora hand)
-          [p q r s :as hand] hand
-          {p-suit :suit p-rank :rank :as p} p
-          {q-suit :suit q-rank :rank :as q} q
-          {r-suit :suit r-rank :rank :as r} r
-          {s-suit :suit s-rank :rank :as s} s]
+          [p q r s] hand
+          {p-suit :suit p-rank :rank} p
+          {q-suit :suit q-rank :rank} q
+          {r-suit :suit r-rank :rank} r
+          {s-suit :suit s-rank :rank} s]
       (and
         (= p-suit q-suit r-suit s-suit)
         (= p-rank q-rank r-rank s-rank)))))
 
+#_{:clj-kondo/ignore [:unused-private-var]}
 (defn- is-complete-set-of-melds [melds]
   (let [number-of-melds (count melds)
         pairs (filter #(= 2 (count %)) melds)
@@ -55,7 +56,7 @@
       (= 7 number-of-melds) (and (= 0 (count trios)) (= 7 (count pairs)))
       :else false)))
 
-(defn tile-is-in-chow-range? [{:keys[suit rank] :as tile} chow-suit starting-rank]
+(defn tile-is-in-chow-range? [{:keys[suit] :as tile} chow-suit starting-rank]
   (let [non-dora-rank (d.tiles/get-non-dora-rank tile)]
     (and (= chow-suit suit) (>= non-dora-rank starting-rank) (<= non-dora-rank (+ 2 starting-rank)))))
 
@@ -64,7 +65,7 @@
     tile
     (first-where #(d.tiles/same-ranks-ignoring-dora? desired-rank (:rank %)) chow-matches)))
 
-(defn- remove-chow-match-tile-by-rank [desired-rank {:keys [rank] :as tile} chow-matches]
+(defn- remove-chow-match-tile-by-rank [desired-rank {:keys [rank]} chow-matches]
   (if (d.tiles/same-ranks-ignoring-dora? desired-rank rank)
     chow-matches
     (let [[before-desired desired-matches after-desired]
@@ -73,7 +74,7 @@
 
 (defn get-chow-melds
   ([hand] (get-chow-melds (last hand) (butlast hand)))
-  ([{:keys [suit rank] :as tile} hand]
+  ([{:keys [suit] :as tile} hand]
     (if (= suit :zi)
       nil
       (let [non-dora-rank (d.tiles/get-non-dora-rank tile)
@@ -121,7 +122,7 @@
 
 (defn get-kong-melds
   ([hand] (get-kong-melds (last hand) (butlast hand)))
-  ([{:keys [suit rank] :as tile} hand]
+  ([tile hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/same-tile-ignoring-dora? tile %) hand))
       nil
       (let [[before kong-matches after] (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand)]

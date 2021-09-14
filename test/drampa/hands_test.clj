@@ -1,3 +1,4 @@
+#_{:clj-kondo/ignore [:refer-all]}
 (ns drampa.hands-test
   (:require [clojure.test :refer :all]
             [drampa.hands :refer :all]

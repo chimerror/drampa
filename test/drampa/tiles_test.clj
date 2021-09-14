@@ -1,3 +1,4 @@
+#_{:clj-kondo/ignore [:refer-all]}
 (ns drampa.tiles-test
   (:require [clojure.test :refer :all]
             [drampa.tiles :refer :all]))

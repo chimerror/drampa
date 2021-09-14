@@ -1,15 +1,12 @@
+#_{:clj-kondo/ignore [:refer-all]}
 (ns drampa.matches-test
   (:require [clojure.test :refer :all]
             [drampa.matches :refer :all]
             [drampa.claims :as d.claims]
-            [drampa.tiles :as d.tiles]
-            [drampa.players :as d.players]))
+            [drampa.tiles :as d.tiles]))
 
 (deftest get-initial-match-is-correct
   (let [{:keys [wall dead-wall players prevailing-wind dora ura-dora]} (get-initial-match)]
-    (testing "Is the starting wall of a match initialized correctly?"
-      (is (not (nil? wall)))
-      (is (= (count wall)) 136))
     (testing "Are the players of a match initialized correctly?"
       (is (not (nil? players)))
       (is (= (count players) 4))
@@ -177,7 +174,7 @@
 
 (defn test-match-from-starting-hands [hands]
   (let [[east-hand south-hand west-hand north-hand] hands
-        hand-tiles (apply concat hands)
+        _ (apply concat hands)
         live-wall-beginning
           (concat
             (subvec east-hand 0 4)
