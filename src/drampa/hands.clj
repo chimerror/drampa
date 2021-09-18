@@ -149,5 +149,5 @@
                     possible-melds (concat chow-melds pung-melds kong-melds)]
                 (if (empty? possible-melds)
                   (recur rest-of-tiles melds (conj non-meldable-tiles candidate-tile))
-                  (let [[new-meld new-rest] (meld-selection-function melds)]
+                  (let [[new-meld new-rest] (meld-selection-function possible-melds)]
                     (recur new-rest (conj melds new-meld) non-meldable-tiles))))))))

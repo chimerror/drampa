@@ -45,6 +45,7 @@
         y (if (= y 0) 5 y)]
     (= x y)))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn same-tile? [x y]
   (= 0 (compare-tiles x y)))
 
@@ -52,7 +53,7 @@
   (= 0 (compare-tiles-ignoring-dora x y)))
 
 (defn sort-tiles [tiles]
-  (sort compare-tiles tiles))
+  (vec (sort compare-tiles tiles)))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn filter-by-suit [tiles suit]

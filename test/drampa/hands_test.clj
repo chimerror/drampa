@@ -1,7 +1,14 @@
 #_{:clj-kondo/ignore [:refer-all]}
 (ns drampa.hands-test
   (:require [clojure.test :refer :all]
-            [drampa.hands :refer :all]
+            [drampa.hands :refer [
+              is-chii?
+              is-pon?
+              is-kan?
+              get-chow-melds
+              get-pung-melds
+              get-kong-melds
+              separate-into-melds]]
             [drampa.tiles :as d.tiles]))
 
 (deftest is-chii-is-correct
@@ -134,3 +141,21 @@
 
 (deftest get-kong-melds-is-correct
   (verify-get-melds get-kong-melds-test-cases get-kong-melds "kong"))
+
+(def get-separate-into-melds-test-cases
+  [
+    ["111p234s34m1z" ["234s" "111p"] "34m1z"]
+  ])
+
+(deftest separate-into-melds-is-correct
+  (doseq [test-case get-separate-into-melds-test-cases
+          :let [[hand-notation expected-melds expected-non-melds-notation] test-case
+                hand (d.tiles/tiles-from-notation hand-notation)
+                expected-melds (mapv #(d.tiles/sort-tiles (d.tiles/tiles-from-notation %)) expected-melds)
+                expected-non-melds (d.tiles/sort-tiles (d.tiles/tiles-from-notation expected-non-melds-notation))
+                [actual-melds actual-non-melds] (separate-into-melds hand)
+                actual-melds (mapv d.tiles/sort-tiles actual-melds)
+                actual-non-melds (d.tiles/sort-tiles actual-non-melds)]]
+    (testing "Can a hand be separated into melds?"
+      (is (= expected-melds actual-melds))
+      (is (= expected-non-melds actual-non-melds)))))
