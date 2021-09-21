@@ -5,6 +5,12 @@
 (defn Tile->str [tile]
   (str (:rank tile) (second (str (:suit tile)))))
 
+(defmethod print-method Tile [tile writer]
+  (doto writer
+    (.write "#t{")
+    (.write (Tile->str tile))
+    (.write "}")))
+
 (defn get-non-dora-rank [{:keys [rank]}]
   (if (= rank 0) 5 rank))
 

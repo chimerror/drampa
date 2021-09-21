@@ -72,6 +72,9 @@
                     (partition-into-three #(d.tiles/same-ranks-ignoring-dora? desired-rank (:rank %)) chow-matches)]
       (concat before-desired (drop 1 desired-matches) after-desired))))
 
+(defn- partition-into-three-at-tile [tile hand]
+  (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand))
+
 (defn get-chow-melds
   ([hand] (get-chow-melds (last hand) (butlast hand)))
   ([{:keys [suit] :as tile} hand]
@@ -107,7 +110,7 @@
   ([{:keys [suit rank] :as tile} hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/same-tile-ignoring-dora? tile %) hand))
       nil
-      (let [[before pung-matches after] (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand)]
+      (let [[before pung-matches after] (partition-into-three-at-tile tile hand)]
         (if (< (count pung-matches) 2)
           nil
           (if (or (= :zi suit) (not= 5 rank) (not-any? #(= 0 (:rank %)) pung-matches) (< (count pung-matches) 3))
@@ -125,7 +128,7 @@
   ([tile hand]
     (if (or (nil? tile) (nil? hand) (empty? hand) (not-any? #(d.tiles/same-tile-ignoring-dora? tile %) hand))
       nil
-      (let [[before kong-matches after] (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand)]
+      (let [[before kong-matches after] (partition-into-three-at-tile tile hand)]
         (if (< (count kong-matches) 3)
           nil
           (let [kong (conj kong-matches tile)
