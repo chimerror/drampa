@@ -1,6 +1,6 @@
 (ns drampa.hands
   (:require [drampa.tiles :as d.tiles]
-            [drampa.utils :refer [first-where partition-into-three]]))
+            [drampa.utils :refer [distinct-by first-where partition-into-three]]))
 
 (defn replace-red-dora [hand]
   (mapv #(let [{:keys [suit rank] :as tile} %] (if (= rank 0) (d.tiles/->Tile suit 5) tile)) hand))
@@ -72,7 +72,7 @@
                     (partition-into-three #(d.tiles/same-ranks-ignoring-dora? desired-rank (:rank %)) chow-matches)]
       (concat before-desired (drop 1 desired-matches) after-desired))))
 
-(defn- partition-into-three-at-tile [tile hand]
+(defn partition-into-three-at-tile [tile hand]
   (partition-into-three #(d.tiles/same-tile-ignoring-dora? tile %) hand))
 
 (defn get-chow-melds
@@ -102,7 +102,7 @@
                                               (remove-chow-match-tile-by-rank lowest-rank tile)
                                               (remove-chow-match-tile-by-rank middle-rank tile)
                                               (remove-chow-match-tile-by-rank last-rank tile))]
-                  [[lowest-tile middle-tile last-tile] (concat before new-chow-matches after)]))))
+                  [[lowest-tile middle-tile last-tile] (vec (concat before new-chow-matches after))]))))
               (as-> cm (if (empty? cm) nil cm)))))))
 
 (defn get-pung-melds
@@ -114,13 +114,13 @@
         (if (< (count pung-matches) 2)
           nil
           (if (or (= :zi suit) (not= 5 rank) (not-any? #(= 0 (:rank %)) pung-matches) (< (count pung-matches) 3))
-            (let [pung (conj (take 2 pung-matches) tile)
-                  rest (concat before (drop 2 pung-matches) after)]
+            (let [pung (vec (conj (take 2 pung-matches) tile))
+                  rest (vec (concat before (drop 2 pung-matches) after))]
               [[pung rest]])
             (let [pung-a [tile (d.tiles/->Tile suit 5) (d.tiles/->Tile suit 5)]
-                  rest-a (concat (conj (vec before) (d.tiles/->Tile suit 0)) after)
+                  rest-a (vec (concat (conj (vec before) (d.tiles/->Tile suit 0)) after))
                   pung-b [tile (d.tiles/->Tile suit 0) (d.tiles/->Tile suit 5)]
-                  rest-b (concat (conj (vec before) (d.tiles/->Tile suit 5)) after)]
+                  rest-b (vec (concat (conj (vec before) (d.tiles/->Tile suit 5)) after))]
                 [[pung-a rest-a] [pung-b rest-b]])))))))
 
 (defn get-kong-melds
@@ -131,26 +131,56 @@
       (let [[before kong-matches after] (partition-into-three-at-tile tile hand)]
         (if (< (count kong-matches) 3)
           nil
-          (let [kong (conj kong-matches tile)
-                rest (concat before after)]
+          (let [kong (vec (conj kong-matches tile))
+                rest (vec (concat before after))]
             [[kong rest]]))))))
 
-(defn separate-into-melds
-  ([hand] (separate-into-melds hand last))
-  ([hand meld-selection-function]
-    (loop  [to-separate hand
-            melds []
-            non-meldable-tiles []]
+(defn compare-meld [meld-a meld-b]
+  (let [count-a (count meld-a)
+        count-b (count meld-b)
+        first-tile-a (first (d.tiles/sort-tiles meld-a))
+        first-tile-b (first (d.tiles/sort-tiles meld-b))]
+  (if (not= count-a count-b)
+    (compare count-a count-b)
+    (d.tiles/compare-tiles first-tile-a first-tile-b))))
+
+(defn sort-melds [melds]
+  (vec (sort compare-meld melds)))
+
+(defn sort-meld-set [[melds non-melds]]
+  [(sort-melds melds) (d.tiles/sort-tiles non-melds)])
+
+(defn get-all-melds-for-tile
+  ([tile hand] (get-all-melds-for-tile tile hand false))
+  ([tile hand allow-pairs?]
+    (let [[before matching-tiles after] (partition-into-three-at-tile tile hand)
+          rest-of-tiles (concat before (rest matching-tiles) after)
+          chow-melds (get-chow-melds tile rest-of-tiles)
+          pung-melds (get-pung-melds tile rest-of-tiles)
+          kong-melds (get-kong-melds tile rest-of-tiles)
+          pair-melds (if allow-pairs? nil nil)] ; TODO: implement get-pair-melds
+      (for [meld (concat chow-melds pung-melds kong-melds pair-melds)]
+        meld))))
+
+(defn get-first-level-melds
+  ([hand] (get-first-level-melds hand false))
+  ([hand allow-pairs?]
+    (distinct
+      (apply concat
+        (mapv #(get-all-melds-for-tile % hand allow-pairs?) (distinct hand))))))
+
+(defn get-all-meld-sets
+  ; TODO: allow pairs or no pairs
+  ([hand] (get-all-meld-sets hand [] []))
+  ([to-separate melds non-meldable-tiles]
       (cond
-        (empty? to-separate) [melds non-meldable-tiles]
-        (= (count to-separate) 1) [melds (conj non-meldable-tiles (last to-separate))]
-        :else (let [candidate-tile (last to-separate)
-                    rest-of-tiles (butlast to-separate)
-                    chow-melds (get-chow-melds candidate-tile rest-of-tiles)
-                    pung-melds (get-pung-melds candidate-tile rest-of-tiles)
-                    kong-melds (get-kong-melds candidate-tile rest-of-tiles)
-                    possible-melds (concat chow-melds pung-melds kong-melds)]
-                (if (empty? possible-melds)
-                  (recur rest-of-tiles melds (conj non-meldable-tiles candidate-tile))
-                  (let [[new-meld new-rest] (meld-selection-function possible-melds)]
-                    (recur new-rest (conj melds new-meld) non-meldable-tiles))))))))
+        (empty? to-separate) [[melds non-meldable-tiles]]
+        (= (count to-separate) 1) [[melds (vec (conj non-meldable-tiles (last to-separate)))]]
+        :else
+          (let [first-level-melds (get-first-level-melds to-separate)]
+            (if (empty? first-level-melds)
+              [[melds (vec (concat to-separate non-meldable-tiles))]]
+              (vec (distinct-by sort-meld-set (mapcat
+                (fn [[made-meld rest-of-tiles]]
+                  (get-all-meld-sets rest-of-tiles (vec (conj melds made-meld)) non-meldable-tiles))
+                first-level-melds))))))))

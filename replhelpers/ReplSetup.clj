@@ -15,7 +15,8 @@
 (def pfp drampa.players/print-friendly-player)
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def pt drampa.tiles/notation-from-tiles)
-#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def tt drampa.tiles/tiles-from-notation)
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
+(def t #(last (tt %)))
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def pts #(drampa.tiles/notation-from-tiles (drampa.tiles/sort-tiles %)))

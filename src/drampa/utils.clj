@@ -16,3 +16,20 @@
                     (drop-while predicate)
                     (take-while #(not (predicate %))))]
     [before desired after]))
+
+(defn distinct-by
+  ([f]
+    (fn [rf]
+      (let [seen (volatile! #{})]
+        (fn
+          ([] (rf))
+          ([result] (rf result))
+          ([result input]
+            (let [v (f input)]
+              (if (contains? @seen v)
+                result
+                (do
+                  (vswap! seen conj v)
+                  (rf result input)))))))))
+  ([f xs]
+    (sequence (distinct-by f) xs)))

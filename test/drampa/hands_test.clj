@@ -1,14 +1,7 @@
 #_{:clj-kondo/ignore [:refer-all]}
 (ns drampa.hands-test
   (:require [clojure.test :refer :all]
-            [drampa.hands :refer [
-              is-chii?
-              is-pon?
-              is-kan?
-              get-chow-melds
-              get-pung-melds
-              get-kong-melds
-              separate-into-melds]]
+            [drampa.hands :refer :all]
             [drampa.tiles :as d.tiles]))
 
 (deftest is-chii-is-correct
@@ -142,20 +135,26 @@
 (deftest get-kong-melds-is-correct
   (verify-get-melds get-kong-melds-test-cases get-kong-melds "kong"))
 
-(def get-separate-into-melds-test-cases
+(def get-all-meld-sets-test-cases
   [
-    ["111p234s34m1z" ["234s" "111p"] "34m1z"]
+    ["111p234s34m1z" [[["234s" "111p"] "34m1z"]]]
+    ["11123p34m1z" [[["123p"] "11p34m1z"] [["111p"] "23p34m1z"]]]
   ])
 
-(deftest separate-into-melds-is-correct
-  (doseq [test-case get-separate-into-melds-test-cases
-          :let [[hand-notation expected-melds expected-non-melds-notation] test-case
+(defn- get-expected-meld-sets [expected-meld-sets-notation]
+  (for [expected-meld-set expected-meld-sets-notation
+        :let [[melds-notation non-melds-notation] expected-meld-set
+              melds (mapv #(d.tiles/tiles-from-notation %) melds-notation)
+              non-melds (d.tiles/tiles-from-notation non-melds-notation)]]
+      [melds non-melds]))
+
+(deftest get-all-meld-sets-is-correct
+  (doseq [test-case get-all-meld-sets-test-cases
+          :let [[hand-notation expected-meld-sets-notation] test-case
                 hand (d.tiles/tiles-from-notation hand-notation)
-                expected-melds (mapv #(d.tiles/sort-tiles (d.tiles/tiles-from-notation %)) expected-melds)
-                expected-non-melds (d.tiles/sort-tiles (d.tiles/tiles-from-notation expected-non-melds-notation))
-                [actual-melds actual-non-melds] (separate-into-melds hand)
-                actual-melds (mapv d.tiles/sort-tiles actual-melds)
-                actual-non-melds (d.tiles/sort-tiles actual-non-melds)]]
-    (testing "Can a hand be separated into melds?"
-      (is (= expected-melds actual-melds))
-      (is (= expected-non-melds actual-non-melds)))))
+                expected-meld-sets (vec (get-expected-meld-sets expected-meld-sets-notation))
+                expected-meld-sets (mapv sort-meld-set expected-meld-sets)
+                actual-meld-sets (get-all-meld-sets hand)
+                actual-meld-sets (mapv sort-meld-set actual-meld-sets)]]
+        (testing "Can a hand be separated into melds?"
+          (is (= expected-meld-sets actual-meld-sets)))))
