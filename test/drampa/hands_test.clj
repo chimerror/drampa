@@ -135,10 +135,26 @@
 (deftest get-kong-melds-is-correct
   (verify-get-melds get-kong-melds-test-cases get-kong-melds "kong"))
 
+(defn- compare-meld-sets [[melds-a non-melds-a] [melds-b non-melds-b]]
+  (let [melds-a (sort-melds melds-a)
+        melds-b (sort-melds melds-b)
+        melds-comparison (compare melds-a melds-b)
+        meld-count-a (count melds-a)
+        meld-count-b (count melds-b)
+        non-melds-a (d.tiles/sort-tiles non-melds-a)
+        non-melds-b (d.tiles/sort-tiles non-melds-b)
+        non-meld-count-a (count non-melds-a)
+        non-meld-count-b (count non-melds-b)
+        non-melds-comparison (compare non-melds-a non-melds-b)]
+    (cond (not= meld-count-a meld-count-b) (compare meld-count-a meld-count-b)
+          (not= non-meld-count-a non-meld-count-b) (compare non-meld-count-a non-meld-count-b)
+          (not= 0 melds-comparison) melds-comparison
+          :else non-melds-comparison)))
+
 (def get-all-meld-sets-test-cases
   [
     ["111p234s34m1z" [[["234s" "111p"] "34m1z"]]]
-    ["11123p34m1z" [[["123p"] "11p34m1z"] [["111p"] "23p34m1z"]]]
+    ["11123p34m1z" [[["111p"] "23p34m1z"] [["123p"] "11p34m1z"]]]
   ])
 
 (defn- get-expected-meld-sets [expected-meld-sets-notation]
@@ -154,7 +170,9 @@
                 hand (d.tiles/tiles-from-notation hand-notation)
                 expected-meld-sets (vec (get-expected-meld-sets expected-meld-sets-notation))
                 expected-meld-sets (mapv sort-meld-set expected-meld-sets)
+                expected-meld-sets (sort compare-meld-sets expected-meld-sets)
                 actual-meld-sets (get-all-meld-sets hand)
-                actual-meld-sets (mapv sort-meld-set actual-meld-sets)]]
+                actual-meld-sets (mapv sort-meld-set actual-meld-sets)
+                actual-meld-sets (sort compare-meld-sets actual-meld-sets)]]
         (testing "Can a hand be separated into melds?"
           (is (= expected-meld-sets actual-meld-sets)))))
